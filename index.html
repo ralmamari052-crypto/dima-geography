@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>خطوط الطول ودوائر العرض – عرض تفاعلي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4FAFF; --paper2:#FFF0F6; --card:#FFFFFF; --soft:#EEF4FF; --border:#DCE5F7;
+  --ink:#1B2559; --muted:#55608A;
+  --sea:#0FB5BA; --coral:#FF5C8A; --sun:#FFC93C; --lav:#8E7CFF; --sky:#3BA4FF; --leaf:#34C77B; --orange:#FF8A3D;
+  --ocean1:#8FDBFF; --ocean2:#2C8BE0; --land:#7DD67F; --landEdge:#4FB060;
+  --hot:#FFB46B; --temp:#A6E8B0; --cold:#DFF4FF;
+  --good:#22B573; --bad:#F0476B;
+  --shadow:0 14px 34px rgba(27,37,89,.14);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#121833; --paper2:#1E1433; --card:#1F2850; --soft:#28325F; --border:#36427A;
+    --ink:#F2F5FF; --muted:#B3BCE0; --ocean1:#4FB3EE; --ocean2:#1A5FAE; --land:#5DBE68; --landEdge:#3E9B4C;
+    --hot:#E7924A; --temp:#5FAE70; --cold:#9CC9E6;
+    --shadow:0 14px 34px rgba(0,0,0,.4); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121833; --paper2:#1E1433; --card:#1F2850; --soft:#28325F; --border:#36427A;
+  --ink:#F2F5FF; --muted:#B3BCE0; --ocean1:#4FB3EE; --ocean2:#1A5FAE; --land:#5DBE68; --landEdge:#3E9B4C;
+  --hot:#E7924A; --temp:#5FAE70; --cold:#9CC9E6;
+  --shadow:0 14px 34px rgba(0,0,0,.4); color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{
+  background:radial-gradient(1200px 700px at 85% -10%, var(--paper2), transparent 60%), var(--paper);
+  color:var(--ink);
+  font-family:"Tajawal","Segoe UI",Tahoma,Arial,sans-serif;
+  font-size:clamp(16px, 1.15vw + .55vh, 23px);
+  line-height:1.6; overflow:hidden;
+}
+h1,h2,h3,.display{font-family:"Baloo Bhaijaan 2","Tajawal","Segoe UI",Tahoma,sans-serif;line-height:1.25;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--lav);outline-offset:3px}
+svg{display:block}
+
+/* ===== shell ===== */
+.app{height:100%;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:.6em;padding:.45em 1em;position:relative;z-index:5}
+.brand{display:flex;align-items:center;gap:.45em;font-family:"Baloo Bhaijaan 2",sans-serif;font-weight:700;font-size:.95em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .dot{width:.8em;height:.8em;border-radius:50%;background:conic-gradient(var(--sea),var(--lav),var(--coral),var(--sun),var(--sea));flex:none}
+.spacer{flex:1}
+.starbox{display:flex;align-items:center;gap:.3em;background:var(--card);border:2px solid var(--sun);padding:.15em .7em;border-radius:999px;font-weight:800;box-shadow:var(--shadow)}
+.starbox .s{color:var(--sun);font-size:1.15em;display:inline-block}
+.starbox.bump .s{animation:bump .6s}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.7) rotate(25deg)}100%{transform:scale(1)}}
+.iconbtn{background:var(--card);border:2px solid var(--border);border-radius:14px;width:2.3em;height:2.3em;display:grid;place-items:center;font-size:1em}
+.progress{height:6px;background:var(--soft);position:relative}
+.progress i{position:absolute;inset:0 0 0 auto;width:0;background:linear-gradient(90deg,var(--coral),var(--lav),var(--sea));border-radius:0 0 0 6px;transition:width .5s}
+
+.stage{flex:1;position:relative;overflow:hidden}
+.slide{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:clamp(12px,2.2vw,34px) clamp(14px,4vw,64px) 24px;display:none;flex-direction:column;gap:.8em}
+.slide.active{display:flex;animation:slideIn .55s cubic-bezier(.2,.8,.2,1)}
+.slide.active.back{animation-name:slideInBack}
+@keyframes slideIn{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes slideInBack{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+
+.controls{display:flex;align-items:center;gap:.6em;padding:.5em 1em .7em;position:relative;z-index:5}
+.navbtn{border:none;border-radius:16px;padding:.5em 1.2em;font-weight:800;background:var(--card);box-shadow:var(--shadow);border:2px solid var(--border)}
+.navbtn.next{background:var(--coral);color:#fff;border-color:transparent}
+.navbtn:disabled{opacity:.35;cursor:default}
+.dots{flex:1;display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
+.dots button{width:11px;height:11px;border-radius:50%;border:none;padding:0;background:var(--border);transition:.3s}
+.dots button.on{width:28px;border-radius:8px;background:var(--lav)}
+.dots button.game{background:var(--sun)}
+.dots button.game.on{background:var(--coral)}
+.counter{font-weight:700;color:var(--muted);min-width:4.2em;text-align:center}
+
+/* ===== common ===== */
+.head{display:flex;align-items:center;gap:.6em;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:.35em;padding:.1em .8em;border-radius:999px;font-weight:800;font-size:.8em;background:var(--soft);color:var(--lav)}
+.tag.game{background:var(--sun);color:#3A2A00}
+.head h2{font-size:clamp(26px,2.6vw + 1vh,50px);font-weight:800}
+.lead{color:var(--muted);margin:0;max-width:60ch}
+.cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(14px,2.5vw,40px);align-items:center;flex:1}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.panel{background:var(--card);border:2px solid var(--border);border-radius:26px;padding:1em 1.2em;box-shadow:var(--shadow)}
+.btn{border:none;border-radius:16px;padding:.55em 1.2em;font-weight:800;background:var(--lav);color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.15);transition:transform .15s}
+.btn:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.btn.coral{background:var(--coral)} .btn.sea{background:var(--sea)} .btn.sun{background:var(--sun);color:#3A2A00}
+.btn.ghost{background:var(--card);color:var(--ink);border:2px solid var(--border)}
+.row{display:flex;gap:.6em;flex-wrap:wrap;align-items:center}
+.visual{display:grid;place-items:center;min-height:0}
+.visual svg{width:100%;max-width:520px;height:auto;max-height:62vh}
+.hl{background:linear-gradient(transparent 55%, color-mix(in srgb,var(--sun) 70%, transparent) 55%);padding:0 .15em;border-radius:3px}
+
+/* flip facts */
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7em}
+@media (max-width:520px){.facts{grid-template-columns:1fr}}
+.flip{perspective:900px;border:none;background:none;padding:0;text-align:inherit}
+.flip-in{display:grid;transition:transform .6s cubic-bezier(.3,1.4,.5,1);transform-style:preserve-3d;height:100%}
+.flip.on .flip-in{transform:rotateY(180deg)}
+.face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;padding:.7em .9em;display:flex;flex-direction:column;justify-content:center;gap:.15em;min-height:5.2em}
+.face.front{background:var(--soft);border:2px dashed var(--border)}
+.face.front b{font-size:1em}
+.face.front small{color:var(--muted);font-size:.78em}
+.face.back{transform:rotateY(180deg);color:#fff;font-weight:700}
+.c1 .back{background:var(--sea)} .c2 .back{background:var(--lav)} .c3 .back{background:var(--coral)} .c4 .back{background:var(--orange)}
+.face .ico{font-size:1.3em}
+
+/* mascot */
+.mascot{width:clamp(70px,8vw,120px);flex:none;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-3deg)}}
+.bubble{position:relative;background:var(--card);border:2px solid var(--border);border-radius:22px;padding:.6em .9em;box-shadow:var(--shadow)}
+.say{display:flex;align-items:center;gap:.7em}
+
+/* cover */
+.cover{align-items:center;justify-content:safe center;text-align:center}
+.cover .globe-wrap{width:min(30vh,320px);position:relative;margin-top:2vh;flex:none}
+.cover .globe-wrap svg{width:100%;height:auto;filter:drop-shadow(0 20px 30px rgba(44,139,224,.35))}
+.cover h1{font-size:clamp(32px,3.6vw + 1vh,72px);font-weight:800;background:linear-gradient(90deg,var(--sea),var(--lav),var(--coral));-webkit-background-clip:text;background-clip:text;color:transparent;padding:.1em 0}
+.cover .sub{display:flex;gap:.5em;flex-wrap:wrap;justify-content:center}
+.pill{padding:.2em .9em;border-radius:999px;background:var(--card);border:2px solid var(--border);font-weight:700;font-size:.85em}
+.orbit{position:absolute;inset:-8%;border:2px dashed color-mix(in srgb,var(--lav) 50%, transparent);border-radius:50%;animation:spin 18s linear infinite}
+.orbit::after{content:"⭐";position:absolute;top:-.7em;left:50%;font-size:1.4em}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* hook grid */
+.grid5{display:grid;grid-template-columns:2em repeat(5,1fr);gap:5px;max-width:440px;width:100%;margin:auto;direction:rtl}
+.grid5 .lab{display:grid;place-items:center;font-weight:800;color:var(--lav)}
+.grid5 .cell{aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:var(--ocean1);font-size:1.4em;display:grid;place-items:center;transition:transform .2s}
+.grid5 .cell:hover{transform:scale(1.06)}
+.grid5 .cell.no{background:var(--soft);animation:shake .4s}
+.grid5 .cell.yes{background:var(--sun);animation:pop .5s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes pop{50%{transform:scale(1.3)}}
+.reveal{display:none}
+.reveal.show{display:block;animation:slideIn .5s}
+
+/* explorer */
+.xl{cursor:pointer}
+.xl .hit{stroke:transparent;stroke-width:18;fill:none}
+.xl:hover .vis{stroke-width:6}
+.xl .vis{transition:stroke-width .2s}
+.xl.done .lbl{fill:var(--ink)}
+.info{min-height:7em}
+.info h3{font-size:1.35em}
+.deg{display:inline-block;font-weight:800;background:var(--sun);color:#3A2A00;border-radius:10px;padding:0 .5em;margin-inline-start:.3em}
+.checks{display:flex;gap:.4em;flex-wrap:wrap;margin-top:.5em}
+.checks span{font-size:.8em;padding:.1em .6em;border-radius:999px;background:var(--soft);color:var(--muted)}
+.checks span.ok{background:var(--good);color:#fff}
+
+/* compare */
+.ctable{display:grid;grid-template-columns:minmax(6em,.7fr) 1fr 1fr;gap:.5em;width:100%}
+.ctable .h{font-family:"Baloo Bhaijaan 2",sans-serif;font-weight:800;text-align:center;padding:.3em;border-radius:16px;color:#fff;font-size:1.1em}
+.ctable .h.lon{background:var(--sea)} .ctable .h.lat{background:var(--lav)}
+.ctable .rl{display:flex;align-items:center;font-weight:800;color:var(--coral)}
+.cell-flip .face{min-height:4.2em;font-size:.9em}
+.cell-flip.lonc .back{background:var(--sea)} .cell-flip.latc .back{background:var(--lav)}
+
+/* time */
+.timeline{direction:ltr;position:relative;height:72px;margin:.4em 0 .2em}
+.timeline .bar{position:absolute;left:0;right:0;top:30px;height:12px;border-radius:8px;background:linear-gradient(90deg,#2B3A7A,#7FB2FF 45%,#FFD86B 50%,#7FB2FF 55%,#2B3A7A)}
+.timeline .tick{position:absolute;top:44px;transform:translateX(-50%);font-size:.7em;color:var(--muted);font-weight:700}
+.timeline .gw{position:absolute;left:50%;top:14px;width:3px;height:44px;background:var(--coral);transform:translateX(-50%)}
+.timeline .pin{position:absolute;top:0;transform:translateX(-50%);font-size:1.5em;transition:left .15s}
+input[type=range]{width:100%;accent-color:var(--coral);height:28px;direction:ltr}
+.clocks{display:flex;gap:1em;justify-content:center;flex-wrap:wrap}
+.clock{text-align:center}
+.clock svg{width:clamp(110px,13vw,170px);height:auto}
+.clock b{display:block}
+.big{font-family:"Baloo Bhaijaan 2",sans-serif;font-size:1.6em;font-weight:800}
+.dirs{display:flex;justify-content:space-between;direction:ltr;font-weight:800}
+.dirs .w{color:var(--sky)} .dirs .e{color:var(--coral)}
+.calc{background:var(--soft);border-radius:16px;padding:.5em .8em;font-weight:700;text-align:center}
+
+/* zones */
+.zband{cursor:pointer;transition:opacity .2s}
+.zband:hover{opacity:.8}
+.zband.sel{stroke:var(--coral);stroke-width:4}
+.legend{display:flex;gap:.8em;flex-wrap:wrap;font-size:.85em}
+.legend span{display:flex;align-items:center;gap:.3em}
+.legend i{width:1em;height:1em;border-radius:4px;display:inline-block;border:1px solid var(--border)}
+
+/* majid */
+.sea-scene{width:100%;max-width:520px;margin:auto}
+.boat{animation:rock 3s ease-in-out infinite;transform-origin:260px 170px}
+@keyframes rock{50%{transform:rotate(-4deg) translateY(4px)}}
+.wave{animation:wave 4s linear infinite}
+@keyframes wave{to{transform:translateX(-80px)}}
+
+/* quiz */
+.quiz{max-width:860px;width:100%;margin:0 auto}
+.qtop{display:flex;justify-content:space-between;align-items:center;gap:.5em;margin-bottom:.6em}
+.qdots{display:flex;gap:5px;flex-wrap:wrap}
+.qdots i{width:14px;height:14px;border-radius:50%;background:var(--border)}
+.qdots i.cur{background:var(--lav);transform:scale(1.2)}
+.qdots i.g{background:var(--good)} .qdots i.b{background:var(--bad)}
+.qtext{font-family:"Baloo Bhaijaan 2",sans-serif;font-size:1.45em;font-weight:700;margin:.2em 0 .6em}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6em}
+@media (max-width:560px){.opts{grid-template-columns:1fr}}
+.opt{display:flex;align-items:center;gap:.6em;border:3px solid var(--border);background:var(--card);border-radius:20px;padding:.6em .9em;font-weight:700;text-align:right;transition:transform .15s,border-color .2s}
+.opt:hover:not(:disabled){transform:translateY(-3px);border-color:var(--lav)}
+.opt .k{width:1.8em;height:1.8em;flex:none;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800}
+.opt:nth-child(1) .k{background:var(--coral)} .opt:nth-child(2) .k{background:var(--sea)} .opt:nth-child(3) .k{background:var(--lav)} .opt:nth-child(4) .k{background:var(--orange)}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 18%, var(--card));animation:pop .45s}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%, var(--card));animation:shake .4s}
+.opt:disabled{cursor:default}
+.feedback{margin-top:.7em;display:none}
+.feedback.show{display:flex;animation:slideIn .4s}
+.result{text-align:center;display:flex;flex-direction:column;align-items:center;gap:.5em}
+.result .stars{font-size:2.4em;letter-spacing:.1em}
+
+/* drag games */
+.cardpool{display:flex;flex-wrap:wrap;gap:.5em;justify-content:center;min-height:3em}
+.dcard{touch-action:none;user-select:none;-webkit-user-select:none;background:var(--card);border:3px solid var(--border);border-radius:16px;padding:.4em .8em;font-weight:800;box-shadow:0 5px 0 var(--border);cursor:grab}
+.dcard.sel{border-color:var(--coral);transform:translateY(-3px)}
+.dcard.dragging{opacity:.3}
+.dcard.ghost{position:fixed;z-index:200;pointer-events:none;transform:rotate(-4deg) scale(1.05);box-shadow:var(--shadow);cursor:grabbing;opacity:1}
+.dcard.bad{animation:shake .4s;border-color:var(--bad)}
+.dzone.over{outline:3px dashed var(--coral);outline-offset:2px}
+.labelboard{position:relative;width:100%;max-width:620px;margin:0 auto;aspect-ratio:520/360}
+.labelboard svg{position:absolute;inset:0;width:100%;height:100%}
+.slot{position:absolute;transform:translateY(-50%);width:28.8%;height:11%;border:3px dashed var(--lav);border-radius:12px;background:color-mix(in srgb,var(--card) 85%, transparent);display:grid;place-items:center;font-weight:800;font-size:clamp(11px,1.6vw,18px);color:var(--muted);text-align:center;line-height:1.1}
+.slot.filled{border-style:solid;border-color:var(--good);background:var(--good);color:#fff;animation:pop .45s}
+.baskets{display:grid;grid-template-columns:1fr 1fr;gap:.8em;flex:1}
+.basket{border:3px dashed var(--border);border-radius:24px;padding:.6em;display:flex;flex-direction:column;gap:.4em;min-height:9em}
+.basket h3{text-align:center;color:#fff;border-radius:14px;padding:.15em}
+.basket.lon h3{background:var(--sea)} .basket.lat h3{background:var(--lav)}
+.basket .in{display:flex;flex-direction:column;gap:.3em}
+.basket .in span{background:var(--soft);border-radius:12px;padding:.2em .6em;font-size:.85em;font-weight:700;animation:pop .4s}
+.winbox{display:none;text-align:center}
+.winbox.show{display:block;animation:pop .5s}
+
+/* final */
+.recap{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.7em}
+.recap div{background:var(--card);border-radius:20px;padding:.7em .9em;border-inline-start:6px solid var(--sea);box-shadow:var(--shadow)}
+.recap div:nth-child(2){border-color:var(--lav)} .recap div:nth-child(3){border-color:var(--coral)} .recap div:nth-child(4){border-color:var(--orange)} .recap div:nth-child(5){border-color:var(--leaf)}
+.trophy{font-size:clamp(60px,9vw,120px);animation:bob 2.5s ease-in-out infinite}
+
+.cf{position:fixed;top:-14px;width:10px;height:14px;z-index:300;border-radius:2px;animation:fall linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(110vh) rotate(800deg)}}
+
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:.5em 1.1em;border-radius:16px;font-weight:800;opacity:0;transition:.3s;z-index:250;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+.draw{stroke-dasharray:1000;stroke-dashoffset:1000}
+.slide.active .draw{animation:drawLine 2.2s ease forwards}
+@keyframes drawLine{to{stroke-dashoffset:0}}
+.pulse{animation:pulseLine 1.2s ease-in-out infinite}
+@keyframes pulseLine{50%{opacity:.35}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .draw{stroke-dashoffset:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span>خطوط الطول ودوائر العرض</div>
+    <div class="spacer"></div>
+    <div class="starbox" id="starbox" title="نجومك"><span class="s">★</span><span id="starCount">٠</span></div>
+    <button class="iconbtn" id="soundBtn" aria-label="الصوت">🔊</button>
+    <button class="iconbtn" id="fsBtn" aria-label="ملء الشاشة">⛶</button>
+  </header>
+  <div class="progress"><i id="prog"></i></div>
+
+  <main class="stage" id="stage">
+
+    <!-- 0 cover -->
+    <section class="slide cover" data-title="البداية">
+      <div class="globe-wrap"><div class="orbit"></div><svg viewBox="0 0 340 340" id="coverGlobe"></svg></div>
+      <h1>خطوط الطول ودوائر العرض</h1>
+      <div class="sub"><span class="pill">🌍 الوحدة الأولى</span><span class="pill">📘 الدرس الثاني</span></div>
+      <div style="background:var(--card);border:3px solid var(--lav);border-radius:22px;padding:.4em 1.4em;box-shadow:var(--shadow)">
+        <div class="display" style="font-weight:800;font-size:1.15em;color:var(--lav)">👩‍🎓 إعداد الطالبة: ديما سعيد محمد المعمري</div>
+        <div style="font-weight:700;color:var(--muted)">🎒 الصف: خامس/٦</div>
+      </div>
+      <div class="say" style="margin-top:.4em">
+        <div class="mascot" data-mascot></div>
+        <div class="bubble">أنا «كُرَيّة»! سأرافقكِ في رحلة حول الأرض، ونجمع النجوم معًا ⭐</div>
+      </div>
+      <button class="btn coral" data-next style="font-size:1.15em;margin-top:.3em">لنبدأ الرحلة 🚀</button>
+    </section>
+
+    <!-- 1 hook -->
+    <section class="slide" data-title="تخيّلي">
+      <div class="head"><span class="tag">💭 تخيّلي</span><h2>أين الكنز بالضبط؟</h2></div>
+      <div class="cols">
+        <div>
+          <div class="panel">
+            <p style="margin:0">قارب صغير وجد كنزًا وسط البحر 🏴‍☠️ وأرسل رسالة: <b>«الكنز في الصف ٣ والعمود ج»</b>.</p>
+            <p style="margin:.4em 0 0">اضغطي على المربع الصحيح لتجدي الكنز!</p>
+          </div>
+          <div class="reveal" id="hookReveal" style="margin-top:.8em">
+            <div class="say"><div class="mascot" data-mascot></div>
+              <div class="bubble">أحسنتِ! 🎉 هكذا تمامًا يحدد العلماء أي مكان على الأرض: شبكة من <b>خطوط الطول</b> و<b>دوائر العرض</b> تشبه صفوف وأعمدة هذه الشبكة.</div></div>
+          </div>
+        </div>
+        <div class="grid5" id="hookGrid"></div>
+      </div>
+    </section>
+
+    <!-- 2 definition -->
+    <section class="slide" data-title="المفهوم">
+      <div class="head"><span class="tag">📖 المفهوم</span><h2>ما المقصود بخطوط الطول ودوائر العرض؟</h2></div>
+      <div class="cols">
+        <div style="display:flex;flex-direction:column;gap:.8em">
+          <div class="panel" style="border-color:var(--sea)">
+            <h3 style="color:var(--sea)">🕸️ التعريف</h3>
+            <p style="margin:.2em 0 0">هي شبكة من الخطوط والدوائر <span class="hl">الوهمية</span> ليست موجودة في الحقيقة، وضعها العلماء الجغرافيون لمساعدتهم في تحديد المواقع بدقة على سطح الأرض.</p>
+          </div>
+          <div class="panel" style="border-color:var(--coral)">
+            <h3 style="color:var(--coral)">📍 أهميتها</h3>
+            <p style="margin:.2em 0 0">تحديد المواقع بدقة على سطح الأرض.</p>
+          </div>
+          <button class="flip c2" style="max-width:520px"><div class="flip-in">
+            <div class="face front"><b>🤔 لماذا نقول إنها «وهمية»؟</b><small>اضغطي لتعرفي</small></div>
+            <div class="face back">لأننا لا نراها على الأرض الحقيقية؛ نرسمها فقط على الخرائط والمجسّمات 🗺️</div>
+          </div></button>
+        </div>
+        <div class="visual" id="defGlobe"></div>
+      </div>
+    </section>
+
+    <!-- 3 longitude -->
+    <section class="slide" data-title="خطوط الطول">
+      <div class="head"><span class="tag">🧭 الجزء الأول</span><h2>خطوط الطول</h2></div>
+      <div class="cols">
+        <div class="visual" id="lonGlobe"></div>
+        <div style="display:flex;flex-direction:column;gap:.7em">
+          <p class="lead">اضغطي على كل بطاقة لتكشفي سرّها 👇</p>
+          <div class="facts">
+            <button class="flip c1"><div class="flip-in"><div class="face front"><span class="ico">↕️</span><b>من أين إلى أين تمتد؟</b></div><div class="face back">من القطب الشمالي إلى القطب الجنوبي</div></div></button>
+            <button class="flip c2"><div class="flip-in"><div class="face front"><span class="ico">🌗</span><b>ما شكلها؟</b></div><div class="face back">أنصاف دوائر وهمية تلتقي عند القطبين</div></div></button>
+            <button class="flip c3" data-show="gw"><div class="flip-in"><div class="face front"><span class="ico">⭐</span><b>ما الخط الرئيسي؟</b></div><div class="face back">خط غرينتش، ودرجته صفر (٠°)</div></div></button>
+            <button class="flip c4"><div class="flip-in"><div class="face front"><span class="ico">🔢</span><b>كم عددها؟</b></div><div class="face back">٣٦٠ خطًا: ١٨٠ شرق غرينتش و١٨٠ غرب غرينتش</div></div></button>
+          </div>
+          <div class="panel" style="padding:.6em 1em"><b>💡 أهميتها:</b> تحديد المواقع شرق وغرب خط غرينتش، وتحديد التوقيت الزمني في دول العالم.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 latitude -->
+    <section class="slide" data-title="دوائر العرض">
+      <div class="head"><span class="tag">🧭 الجزء الثاني</span><h2>دوائر العرض</h2></div>
+      <div class="cols">
+        <div class="visual" id="latGlobe"></div>
+        <div style="display:flex;flex-direction:column;gap:.7em">
+          <p class="lead">اضغطي على كل بطاقة لتكشفي سرّها 👇</p>
+          <div class="facts">
+            <button class="flip c1"><div class="flip-in"><div class="face front"><span class="ico">↔️</span><b>من أين إلى أين تمتد؟</b></div><div class="face back">من جهة الشرق إلى جهة الغرب</div></div></button>
+            <button class="flip c2"><div class="flip-in"><div class="face front"><span class="ico">⭕</span><b>ما شكلها؟</b></div><div class="face back">دوائر مكتملة تحيط بالكرة الأرضية</div></div></button>
+            <button class="flip c3" data-show="eq"><div class="flip-in"><div class="face front"><span class="ico">⭐</span><b>ما الدائرة الرئيسية؟</b></div><div class="face back">دائرة الاستواء، ودرجتها صفر (٠°)</div></div></button>
+            <button class="flip c4"><div class="flip-in"><div class="face front"><span class="ico">🔢</span><b>كم عددها؟</b></div><div class="face back">١٨٠ دائرة: ٩٠ شمال الاستواء و٩٠ جنوب الاستواء</div></div></button>
+          </div>
+          <div class="panel" style="padding:.6em 1em"><b>💡 أهميتها:</b> تحديد المواقع شمال وجنوب دائرة الاستواء، ومعرفة المناخ في العالم. وكلما اقتربنا من القطب صغرت الدائرة!</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 explorer -->
+    <section class="slide" data-title="الخطوط الرئيسية">
+      <div class="head"><span class="tag">🔍 استكشفي</span><h2>الخطوط والدوائر الرئيسية</h2></div>
+      <p class="lead">اضغطي على كل خط ملوّن في الكرة لتكتشفي اسمه ودرجته. اكتشفي الستة كلها لتربحي نجمة ⭐</p>
+      <div class="cols">
+        <div class="visual" id="explorer"></div>
+        <div style="display:flex;flex-direction:column;gap:.7em">
+          <div class="panel info" id="xinfo"><h3>👈 اختاري خطًا من الكرة</h3><p style="margin:.3em 0 0;color:var(--muted)">كل خط له لون مختلف.</p></div>
+          <div class="checks" id="xchecks"></div>
+          <div class="say"><div class="mascot" data-mascot style="width:70px"></div><div class="bubble" style="font-size:.9em">🧠 حيلة للحفظ: <b>الجَدي</b> و<b>الجَنوب</b> يبدآن بحرف الجيم! أمّا <b>السرطان</b> فهو في <b>الشمال</b>.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 compare -->
+    <section class="slide" data-title="المقارنة">
+      <div class="head"><span class="tag">⚖️ قارني</span><h2>ما الفرق بين خطوط الطول ودوائر العرض؟</h2></div>
+      <p class="lead">اكشفي الخانات واحدة واحدة، وحاولي التخمين قبل الضغط 😉</p>
+      <div class="ctable" id="ctable"></div>
+    </section>
+
+    <!-- 7 time -->
+    <section class="slide" data-title="التوقيت الزمني">
+      <div class="head"><span class="tag">⏰ التوقيت</span><h2>بين كل خط طول والذي يليه ٤ دقائق</h2></div>
+      <div class="cols">
+        <div style="display:flex;flex-direction:column;gap:.5em">
+          <div class="dirs"><span class="w">⬅️ غرب: الوقت ينقص (−)</span><span class="e">شرق: الوقت يزيد (+) ➡️</span></div>
+          <div class="timeline" id="timeline"><div class="bar"></div><div class="gw"></div><div class="pin" id="tpin">📍</div></div>
+          <input type="range" id="lonRange" min="-180" max="180" step="1" value="0" aria-label="خط الطول">
+          <div class="row" style="justify-content:center">
+            <button class="btn ghost" data-lon="-30">٣٠° غرب</button>
+            <button class="btn ghost" data-lon="0">غرينتش</button>
+            <button class="btn ghost" data-lon="15">١٥° شرق</button>
+            <button class="btn sea" data-lon="58">مسقط 🇴🇲</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.6em">
+          <div class="clocks">
+            <div class="clock"><svg viewBox="0 0 120 120" id="clockG"></svg><b>غرينتش</b><span id="tG"></span></div>
+            <div class="clock"><svg viewBox="0 0 120 120" id="clockP"></svg><b id="placeName">المكان</b><span id="tP"></span></div>
+          </div>
+          <div class="calc" id="calc"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 zones -->
+    <section class="slide" data-title="المناطق الحرارية">
+      <div class="head"><span class="tag">🌡️ المناخ</span><h2>المناطق الحرارية في العالم</h2></div>
+      <p class="lead">دوائر العرض تساعدنا على معرفة المناخ! اضغطي على كل منطقة ملوّنة، ثم ابحثي عن عُمان ⭐</p>
+      <div class="cols">
+        <div class="visual" id="zonesGlobe"></div>
+        <div style="display:flex;flex-direction:column;gap:.7em">
+          <div class="panel info" id="zinfo"><h3>👈 اختاري منطقة</h3><p style="margin:.3em 0 0;color:var(--muted)">هناك خمس مناطق حرارية.</p></div>
+          <div class="legend"><span><i style="background:var(--hot)"></i>الحارة</span><span><i style="background:var(--temp)"></i>المعتدلة</span><span><i style="background:var(--cold)"></i>الباردة</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9 ibn majid -->
+    <section class="slide" data-title="أحمد بن ماجد">
+      <div class="head"><span class="tag">🇴🇲 شخصية عُمانية</span><h2>الملّاح أحمد بن ماجد</h2></div>
+      <div class="cols">
+        <div class="visual"><svg viewBox="0 0 520 260" class="sea-scene" id="seaScene"></svg></div>
+        <div style="display:flex;flex-direction:column;gap:.7em">
+          <div class="panel" style="border-color:var(--sea)">
+            <p style="margin:0">ملّاح عُماني عظيم لُقّب بـ<b>«أسد البحار»</b> ⛵ وصف خطوط الطول ودوائر العرض في كتابه:</p>
+            <p class="display" style="margin:.4em 0 0;font-size:1.2em;color:var(--lav);font-weight:800">📜 «الفوائد في أصول علم البحر والقواعد»</p>
+          </div>
+          <button class="flip c3"><div class="flip-in">
+            <div class="face front"><b>🧭 لماذا يحتاج البحّار إلى هذه الخطوط؟</b><small>اضغطي لتعرفي</small></div>
+            <div class="face back">لأن البحر لا توجد فيه شوارع ولا لافتات! فيحدد البحّار مكان سفينته بخط الطول ودائرة العرض.</div>
+          </div></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 game quiz -->
+    <section class="slide" data-title="لعبة ١" data-game>
+      <div class="head"><span class="tag game">🎮 اللعبة ١</span><h2>مسابقة النجوم</h2></div>
+      <div class="quiz" id="quiz1"></div>
+    </section>
+
+    <!-- 11 game labels -->
+    <section class="slide" data-title="لعبة ٢" data-game>
+      <div class="head"><span class="tag game">🎮 اللعبة ٢</span><h2>ألصقي الأسماء على الكرة</h2></div>
+      <p class="lead">اسحبي كل بطاقة إلى مكانها الصحيح، أو اضغطي البطاقة ثم اضغطي المربع.</p>
+      <div class="cardpool" id="g2pool"></div>
+      <div class="labelboard" id="g2board"></div>
+      <div class="winbox" id="g2win"><p class="display" style="font-size:1.4em;font-weight:800;margin:.2em">🎉 رائع! كلها صحيحة</p><button class="btn ghost" id="g2again">العبي مرة أخرى 🔄</button></div>
+    </section>
+
+    <!-- 12 game sort -->
+    <section class="slide" data-title="لعبة ٣" data-game>
+      <div class="head"><span class="tag game">🎮 اللعبة ٣</span><h2>سلّة الفرز</h2></div>
+      <p class="lead">ضعي كل بطاقة في السلة الصحيحة: هل هي من صفات خطوط الطول أم دوائر العرض؟</p>
+      <div class="cardpool" id="g3pool"></div>
+      <div class="baskets">
+        <div class="basket lon dzone" data-zone="lon"><h3>🧭 خطوط الطول</h3><div class="in"></div></div>
+        <div class="basket lat dzone" data-zone="lat"><h3>⭕ دوائر العرض</h3><div class="in"></div></div>
+      </div>
+      <div class="winbox" id="g3win"><p class="display" style="font-size:1.4em;font-weight:800;margin:.2em">🏆 فرز ممتاز!</p><button class="btn ghost" id="g3again">العبي مرة أخرى 🔄</button></div>
+    </section>
+
+    <!-- 14 final -->
+    <section class="slide cover" data-title="الختام">
+      <div class="trophy">🏆</div>
+      <h1 style="font-size:clamp(30px,3.5vw + 1vh,64px)">أحسنتِ يا مستكشفة!</h1>
+      <div class="pill" style="font-size:1.1em">جمعتِ <b id="finalStars">٠</b> ⭐</div>
+      <div style="font-weight:800;color:var(--lav)">👩‍🎓 إعداد الطالبة: ديما سعيد محمد المعمري • الصف: خامس/٦</div>
+      <div class="recap" style="width:100%;max-width:1000px;text-align:right">
+        <div>🕸️ شبكة وهمية لتحديد المواقع بدقة.</div>
+        <div>🧭 خطوط الطول: ٣٦٠ خطًا، أهمها غرينتش (٠°).</div>
+        <div>⭕ دوائر العرض: ١٨٠ دائرة، أهمها الاستواء (٠°).</div>
+        <div>⏰ ٤ دقائق بين كل خط طول والذي يليه.</div>
+        <div>🌡️ عُمان في المنطقة الحارة.</div>
+      </div>
+      <div class="row" style="justify-content:center">
+        <button class="btn coral" id="celebrate">احتفلي 🎉</button>
+        <button class="btn ghost" id="restart">ابدئي من جديد 🔄</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="controls">
+    <button class="navbtn" id="prev">→ السابق</button>
+    <span class="counter" id="counter"></span>
+    <div class="dots" id="dots"></div>
+    <button class="navbtn next" id="next">التالي ←</button>
+  </nav>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const AR=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const RAD=Math.PI/180;
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+/* ---------- sound ---------- */
+const S={ctx:null,muted:false,
+  c(){if(!this.ctx){try{this.ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+      if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();return this.ctx},
+  t(f,d,type,delay,v,to){if(this.muted)return;const c=this.c();if(!c)return;
+    const o=c.createOscillator(),g=c.createGain(),t0=c.currentTime+(delay||0);
+    o.type=type||'sine';o.frequency.setValueAtTime(f,t0);if(to)o.frequency.exponentialRampToValueAtTime(to,t0+d);
+    g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(v||.15,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+    o.connect(g);g.connect(c.destination);o.start(t0);o.stop(t0+d+.05)},
+  good(){[523,659,784,1047].forEach((f,i)=>this.t(f,.2,'triangle',i*.08,.2))},
+  bad(){this.t(240,.28,'sawtooth',0,.07,130);this.t(190,.3,'square',.13,.04,110)},
+  pop(){this.t(520,.09,'sine',0,.15,900)},
+  flip(){this.t(420,.12,'triangle',0,.12,700)},
+  swoosh(){this.t(260,.22,'sine',0,.05,820)},
+  win(){[523,659,784,659,784,1047,1319].forEach((f,i)=>this.t(f,.25,'triangle',i*.11,.2))}
+};
+$('#soundBtn').onclick=()=>{S.muted=!S.muted;$('#soundBtn').textContent=S.muted?'🔇':'🔊';if(!S.muted)S.pop()};
+$('#fsBtn').onclick=()=>{try{if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen()}catch(e){toast('ملء الشاشة غير متاح هنا')}};
+
+/* ---------- stars / toast / confetti ---------- */
+let stars=0;
+function addStar(n){stars+=n||1;$('#starCount').textContent=AR(stars);$('#finalStars').textContent=AR(stars);
+  const b=$('#starbox');b.classList.remove('bump');void b.offsetWidth;b.classList.add('bump')}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800)}
+function confetti(n){if(reduce)return;const cols=['#FF5C8A','#FFC93C','#0FB5BA','#8E7CFF','#3BA4FF','#34C77B'];
+  for(let i=0;i<(n||90);i++){const d=document.createElement('i');d.className='cf';d.style.left=Math.random()*100+'vw';
+    d.style.background=cols[i%cols.length];d.style.animationDuration=(2+Math.random()*2)+'s';d.style.animationDelay=(Math.random()*.6)+'s';
+    d.style.width=(6+Math.random()*8)+'px';document.body.appendChild(d);setTimeout(()=>d.remove(),5200)}}
+
+/* ---------- mascot ---------- */
+const mascot=`<svg viewBox="0 0 120 124"><defs><clipPath id="mc"><circle cx="60" cy="66" r="48"/></clipPath></defs>
+<circle cx="60" cy="66" r="48" fill="#4FB6FF"/><g clip-path="url(#mc)" fill="#7DD67F"><path d="M20 40c15-10 30-6 34 4s-6 18-18 20-26-12-16-24z"/><path d="M70 82c14-6 30 0 32 12s-12 22-26 18-20-24-6-30z"/><path d="M78 26c10-4 22 2 22 10s-10 10-18 8-12-14-4-18z"/></g>
+<path d="M44 22c-8-12-22-8-20 2s14 8 20 4zM76 22c8-12 22-8 20 2s-14 8-20 4z" fill="#FF5C8A"/><circle cx="60" cy="22" r="6" fill="#FF5C8A"/>
+<ellipse cx="44" cy="62" rx="8" ry="10" fill="#fff"/><ellipse cx="76" cy="62" rx="8" ry="10" fill="#fff"/>
+<circle cx="45" cy="64" r="5" fill="#1B2559"/><circle cx="77" cy="64" r="5" fill="#1B2559"/><circle cx="47" cy="62" r="1.8" fill="#fff"/><circle cx="79" cy="62" r="1.8" fill="#fff"/>
+<circle cx="34" cy="78" r="6" fill="#FF8FB1" opacity=".7"/><circle cx="86" cy="78" r="6" fill="#FF8FB1" opacity=".7"/>
+<path d="M48 82q12 12 24 0" stroke="#1B2559" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`;
+$$('[data-mascot]').forEach(m=>m.innerHTML=mascot);
+
+/* ---------- globe helpers ---------- */
+function mer(cx,cy,R,lam){const rx=Math.abs(R*Math.sin(lam*RAD));if(rx<.6)return `M${cx} ${cy-R}L${cx} ${cy+R}`;
+  return `M${cx} ${cy-R}A${rx.toFixed(1)} ${R} 0 0 ${lam>0?1:0} ${cx} ${cy+R}`}
+const latY=(cy,R,phi)=>cy-R*Math.sin(phi*RAD), latW=(R,phi)=>R*Math.cos(phi*RAD);
+function latP(cx,cy,R,phi){const y=latY(cy,R,phi),w=latW(R,phi);return `M${(cx-w).toFixed(1)} ${y.toFixed(1)}L${(cx+w).toFixed(1)} ${y.toFixed(1)}`}
+let gid=0;
+function base(cx,cy,R,land){const id='g'+(gid++),k=R/150;
+  return {id,s:`<defs><radialGradient id="o${id}" cx="38%" cy="32%" r="75%"><stop offset="0" style="stop-color:var(--ocean1)"/><stop offset="1" style="stop-color:var(--ocean2)"/></radialGradient>
+  <clipPath id="c${id}"><circle cx="${cx}" cy="${cy}" r="${R}"/></clipPath></defs>
+  <circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#o${id})"/>
+  ${land===false?'':`<g clip-path="url(#c${id})" style="fill:var(--land);stroke:var(--landEdge)" stroke-width="1.5" transform="translate(${cx-170*k} ${cy-170*k}) scale(${k})">
+   <path d="M160 150C140 150 128 165 135 185C140 205 160 215 165 240C168 262 180 280 190 285C200 270 205 250 215 235C225 215 230 195 222 180C215 165 200 160 195 150C185 145 170 146 160 150Z"/>
+   <path d="M150 95C160 80 185 78 200 85C210 92 205 105 195 110C185 118 170 115 160 120C150 118 145 105 150 95Z"/>
+   <path d="M205 75C235 60 280 70 300 95C310 115 300 135 285 140C270 145 255 160 240 150C228 140 215 130 210 118C205 105 200 90 205 75Z"/>
+   <path d="M222 150C232 145 245 152 248 165C245 178 235 182 228 175C222 168 220 158 222 150Z"/>
+   <path d="M40 170C55 165 70 175 72 190C70 210 60 225 50 240C42 230 38 210 40 170Z"/>
+   <path d="M60 305C120 292 220 292 285 305L285 340L60 340Z"/></g>`}`}}
+const rim=(cx,cy,R)=>`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3"/>`;
+function poles(cx,cy,R){return `<circle cx="${cx}" cy="${cy-R}" r="5" fill="#FF5C8A"/><circle cx="${cx}" cy="${cy+R}" r="5" fill="#FF5C8A"/>
+ <text x="${cx}" y="${cy-R-10}" text-anchor="middle" font-size="14" font-weight="800" style="fill:var(--ink)">القطب الشمالي</text>
+ <text x="${cx}" y="${cy+R+22}" text-anchor="middle" font-size="14" font-weight="800" style="fill:var(--ink)">القطب الجنوبي</text>`}
+
+/* cover rotating globe */
+(function(){const svg=$('#coverGlobe'),b=base(170,170,150,false);
+  let latL='';for(let p=-75;p<=75;p+=15)latL+=latP(170,170,150,p);
+  svg.innerHTML=b.s+`<path d="${latL}" stroke="rgba(255,255,255,.55)" stroke-width="1.6" fill="none"/>
+  <path id="covMer" stroke="rgba(255,255,255,.8)" stroke-width="1.8" fill="none"/>
+  <path d="${latP(170,170,150,0)}" stroke="#FFC93C" stroke-width="3.5"/>
+  <path id="covGw" stroke="#FF5C8A" stroke-width="3.5" fill="none"/>`+rim(170,170,150)+
+  `<ellipse cx="125" cy="110" rx="45" ry="28" fill="rgba(255,255,255,.18)" transform="rotate(-30 125 110)"/>`;
+  let t=0;const m=$('#covMer'),g=$('#covGw');
+  function frame(){t=(t+.35)%360;let d='';for(let L=0;L<360;L+=20){let lam=((L+t)%360);if(lam>180)lam-=360;if(lam>-90&&lam<90)d+=mer(170,170,150,lam)}
+    m.setAttribute('d',d);let gl=(t%360);if(gl>180)gl-=360;g.setAttribute('d',(gl>-90&&gl<90)?mer(170,170,150,gl):'');
+    if(!reduce)requestAnimationFrame(frame)}frame()})();
+
+/* definition globe: grid */
+(function(){const cx=180,cy=180,R=150,b=base(cx,cy,R);let m='',l='';
+  for(let a=-75;a<=75;a+=15)m+=mer(cx,cy,R,a);for(let p=-75;p<=75;p+=15)l+=latP(cx,cy,R,p);
+  $('#defGlobe').innerHTML=`<svg viewBox="0 0 360 380" style="direction:ltr">${b.s}<path d="${m}" stroke="rgba(255,255,255,.75)" stroke-width="1.6" fill="none"/><path d="${l}" stroke="rgba(255,255,255,.75)" stroke-width="1.6" fill="none"/>${rim(cx,cy,R)}
+  <g><circle cx="${cx+60}" cy="${cy-40}" r="9" fill="#FF5C8A" stroke="#fff" stroke-width="3"><animate attributeName="r" values="7;11;7" dur="1.4s" repeatCount="indefinite"/></circle>
+  <text x="${cx+60}" y="${cy-60}" text-anchor="middle" font-size="26">📍</text></g>
+  <text x="${cx}" y="370" text-anchor="middle" font-size="16" font-weight="800" style="fill:var(--muted)">شبكة تشبه الشبكة التي وجدتِ بها الكنز!</text></svg>`})();
+
+/* longitude globe */
+(function(){const cx=190,cy=180,R=145,b=base(cx,cy,R);let m='';
+  for(let a=-80;a<=80;a+=20)if(a!==0)m+=mer(cx,cy,R,a);
+  $('#lonGlobe').innerHTML=`<svg viewBox="0 0 380 370" style="direction:ltr">${b.s}
+  <path class="draw" d="${m}" stroke="#fff" stroke-width="2.4" fill="none"/>
+  <path id="gwLine" d="${mer(cx,cy,R,0)}" stroke="#FFC93C" stroke-width="5" opacity=".35"/>${rim(cx,cy,R)}${poles(cx,cy,R)}
+  <text x="${cx+R+8}" y="${cy+6}" font-size="17" font-weight="800" fill="#FF5C8A">شرق</text>
+  <text x="${cx-R-8}" y="${cy+6}" text-anchor="end" font-size="17" font-weight="800" fill="#3BA4FF">غرب</text>
+  <g id="gwLbl" opacity="0"><rect x="${cx-62}" y="${cy-16}" width="124" height="30" rx="10" fill="#FFC93C"/><text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="15" font-weight="800" fill="#3A2A00">خط غرينتش ٠°</text></g></svg>`})();
+
+/* latitude globe */
+(function(){const cx=190,cy=180,R=145,b=base(cx,cy,R);let l='';
+  for(let p=-75;p<=75;p+=15)if(p!==0)l+=latP(cx,cy,R,p);
+  $('#latGlobe').innerHTML=`<svg viewBox="0 0 380 370" style="direction:ltr">${b.s}
+  <path class="draw" d="${l}" stroke="#fff" stroke-width="2.4" fill="none"/>
+  <path id="eqLine" d="${latP(cx,cy,R,0)}" stroke="#FFC93C" stroke-width="5" opacity=".35"/>${rim(cx,cy,R)}${poles(cx,cy,R)}
+  <text x="${cx+R+8}" y="${cy-60}" font-size="16" font-weight="800" style="fill:var(--ink)">شمال</text>
+  <text x="${cx+R+8}" y="${cy+70}" font-size="16" font-weight="800" style="fill:var(--ink)">جنوب</text>
+  <g id="eqLbl" opacity="0"><rect x="${cx-70}" y="${cy-34}" width="140" height="28" rx="10" fill="#FFC93C"/><text x="${cx}" y="${cy-14}" text-anchor="middle" font-size="15" font-weight="800" fill="#3A2A00">دائرة الاستواء ٠°</text></g></svg>`})();
+
+/* ---------- flips ---------- */
+document.addEventListener('click',e=>{const f=e.target.closest('.flip');if(!f)return;
+  f.classList.toggle('on');S.flip();
+  if(f.dataset.show==='gw'){const on=f.classList.contains('on');$('#gwLine').setAttribute('opacity',on?1:.35);$('#gwLine').classList.toggle('pulse',on);$('#gwLbl').setAttribute('opacity',on?1:0)}
+  if(f.dataset.show==='eq'){const on=f.classList.contains('on');$('#eqLine').setAttribute('opacity',on?1:.35);$('#eqLine').classList.toggle('pulse',on);$('#eqLbl').setAttribute('opacity',on?1:0)}
+  if(f.classList.contains('on')&&!f.dataset.got){f.dataset.got=1}
+});
+
+/* ---------- hook grid ---------- */
+(function(){const g=$('#hookGrid'),cols=['أ','ب','ج','د','هـ'];let h='<span></span>';cols.forEach(c=>h+=`<span class="lab">${c}</span>`);
+  for(let r=1;r<=5;r++){h+=`<span class="lab">${AR(r)}</span>`;cols.forEach((c,i)=>h+=`<button class="cell" data-r="${r}" data-c="${i}" aria-label="الصف ${r} العمود ${c}">🌊</button>`)}
+  g.innerHTML=h;let found=false;
+  g.addEventListener('click',e=>{const c=e.target.closest('.cell');if(!c||found)return;
+    if(c.dataset.r==='3'&&c.dataset.c==='2'){found=true;c.textContent='💎';c.classList.add('yes');S.win();confetti(60);addStar();$('#hookReveal').classList.add('show')}
+    else{c.classList.remove('no');void c.offsetWidth;c.classList.add('no');S.bad();toast('ليس هنا… انظري إلى رقم الصف وحرف العمود')}})})();
+
+/* ---------- explorer ---------- */
+(function(){const cx=200,cy=170,R=145,b=base(cx,cy,R);
+  const L=[
+   {k:'arc',phi:66.5,c:'#BFE9FF',n:'الدائرة القطبية الشمالية',d:'٦٦٫٥° شمالًا',t:'تحدّ المنطقة الباردة الشمالية حول القطب الشمالي ❄️'},
+   {k:'can',phi:23.5,c:'#FF8A3D',n:'مدار السرطان',d:'٢٣٫٥° شمالًا',t:'يقع شمال الاستواء، ويمر بأرض سلطنة عُمان قريبًا من مسقط! 🇴🇲'},
+   {k:'eq',phi:0,c:'#FFC93C',n:'دائرة الاستواء',d:'٠°',t:'الدائرة الرئيسية وأكبر دوائر العرض، تقسم الأرض إلى نصف شمالي ونصف جنوبي.'},
+   {k:'cap',phi:-23.5,c:'#34C77B',n:'مدار الجدي',d:'٢٣٫٥° جنوبًا',t:'يقع جنوب الاستواء. تذكّري: جَدي = جَنوب 😉'},
+   {k:'ant',phi:-66.5,c:'#8E7CFF',n:'الدائرة القطبية الجنوبية',d:'٦٦٫٥° جنوبًا',t:'تحدّ المنطقة الباردة الجنوبية حول القطب الجنوبي 🐧'},
+   {k:'gw',lam:0,c:'#FF5C8A',n:'خط غرينتش',d:'٠°',t:'الخط الرئيسي لخطوط الطول، يقسم الأرض إلى نصف شرقي ونصف غربي.'}];
+  let s=`<svg viewBox="0 0 520 345" style="direction:ltr">${b.s}`;
+  let m='';for(let a=-75;a<=75;a+=15)if(a)m+=mer(cx,cy,R,a);s+=`<path d="${m}" stroke="rgba(255,255,255,.45)" stroke-width="1.2" fill="none"/>`+rim(cx,cy,R);
+  L.forEach(o=>{if(o.k==='gw'){s+=`<g class="xl" data-k="gw" tabindex="0"><path class="hit" d="M${cx} ${cy-R}L${cx} ${cy+R}"/><path class="vis" d="M${cx} ${cy-R}L${cx} ${cy+R}" stroke="${o.c}" stroke-width="4"/>
+     <text class="lbl" x="${cx}" y="${cy+R+22}" text-anchor="middle" font-size="15" font-weight="800" fill="${o.c}">؟</text></g>`;return}
+    const y=latY(cy,R,o.phi),w=latW(R,o.phi);
+    s+=`<g class="xl" data-k="${o.k}" tabindex="0"><path class="hit" d="M${cx-w} ${y}L372 ${y}"/><path class="vis" d="M${cx-w} ${y}L${cx+w} ${y}" stroke="${o.c}" stroke-width="4"/>
+    <path d="M${cx+w} ${y}L360 ${y}" stroke="${o.c}" stroke-width="2" stroke-dasharray="5 5"/><circle cx="364" cy="${y}" r="6" fill="${o.c}"/>
+    <text class="lbl" x="376" y="${y+5}" font-size="14" font-weight="800" fill="${o.c}">؟</text></g>`});
+  $('#explorer').innerHTML=s+'</svg>';
+  const done=new Set();$('#xchecks').innerHTML=L.map(o=>`<span data-k="${o.k}">${o.n}</span>`).join('');
+  function pick(k){const o=L.find(x=>x.k===k);S.pop();
+    $('#xinfo').innerHTML=`<h3 style="color:${o.c==='#BFE9FF'?'var(--sky)':o.c}">${o.n}<span class="deg">${o.d}</span></h3><p style="margin:.3em 0 0">${o.t}</p>`;
+    const g=$(`.xl[data-k="${k}"]`);g.classList.add('done');$('.lbl',g).textContent=o.n;
+    $(`#xchecks [data-k="${k}"]`).classList.add('ok');
+    if(!done.has(k)){done.add(k);if(done.size===L.length){S.win();confetti();addStar();toast('اكتشفتِ كل الخطوط الرئيسية! ⭐')}}}
+  $$('#explorer .xl').forEach(g=>{g.addEventListener('click',()=>pick(g.dataset.k));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(g.dataset.k)}})})})();
+
+/* ---------- compare table ---------- */
+(function(){const rows=[
+  ['المفهوم','أنصاف دوائر وهمية تلتقي عند القطبين','دوائر مكتملة تحيط بالكرة الأرضية'],
+  ['الرئيسي','خط غرينتش ودرجته صفر','دائرة الاستواء ودرجتها صفر'],
+  ['عددها','٣٦٠ خطًا: ١٨٠ شرق و١٨٠ غرب غرينتش','١٨٠ دائرة: ٩٠ شمال و٩٠ جنوب الاستواء'],
+  ['أهميتها','تحديد المواقع شرق وغرب غرينتش، وتحديد التوقيت الزمني','تحديد المواقع شمال وجنوب الاستواء، ومعرفة المناخ']];
+  let h='<span></span><div class="h lon">🧭 خطوط الطول</div><div class="h lat">⭕ دوائر العرض</div>';
+  rows.forEach(r=>{h+=`<div class="rl">${r[0]}</div>`;
+    h+=`<button class="flip cell-flip lonc"><div class="flip-in"><div class="face front"><b>❓</b><small>اضغطي للكشف</small></div><div class="face back">${r[1]}</div></div></button>`;
+    h+=`<button class="flip cell-flip latc"><div class="flip-in"><div class="face front"><b>❓</b><small>اضغطي للكشف</small></div><div class="face back">${r[2]}</div></div></button>`});
+  $('#ctable').innerHTML=h})();
+
+/* ---------- time ---------- */
+function clockSVG(h,m,night){const ha=((h%12)+m/60)*30,ma=m*6;let t='';for(let i=0;i<12;i++){const a=i*30*RAD;t+=`<line x1="${60+44*Math.sin(a)}" y1="${60-44*Math.cos(a)}" x2="${60+50*Math.sin(a)}" y2="${60-50*Math.cos(a)}" stroke="currentColor" stroke-width="${i%3?2:4}"/>`}
+  return `<circle cx="60" cy="60" r="56" fill="${night?'#2B3A7A':'#FFF4CC'}" stroke="${night?'#8E7CFF':'#FFC93C'}" stroke-width="6"/><g style="color:${night?'#fff':'#1B2559'}">${t}
+  <line x1="60" y1="60" x2="${60+26*Math.sin(ha*RAD)}" y2="${60-26*Math.cos(ha*RAD)}" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+  <line x1="60" y1="60" x2="${60+40*Math.sin(ma*RAD)}" y2="${60-40*Math.cos(ma*RAD)}" stroke="#FF5C8A" stroke-width="4" stroke-linecap="round"/></g>
+  <circle cx="60" cy="60" r="5" fill="#FF5C8A"/><text x="60" y="94" text-anchor="middle" font-size="16">${night?'🌙':'☀️'}</text>`}
+const fmt=(h,m)=>`${AR(((h+11)%12)+1)}:${AR(String(m).padStart(2,'0'))} ${h<12?'ص':'م'}`;
+(function(){const tl=$('#timeline');[-180,-120,-60,0,60,120,180].forEach(v=>{const s=document.createElement('span');s.className='tick';s.style.left=((v+180)/360*100)+'%';s.textContent=AR(Math.abs(v))+'°';tl.appendChild(s)});
+  $('#clockG').innerHTML=clockSVG(12,0,false);$('#tG').textContent=fmt(12,0);
+  const r=$('#lonRange');let last=0;
+  function upd(){const v=+r.value;$('#tpin').style.left=((v+180)/360*100)+'%';
+    let tot=12*60+v*4;tot=((tot%1440)+1440)%1440;const h=Math.floor(tot/60),m=Math.round(tot%60)%60;
+    $('#clockP').innerHTML=clockSVG(h,m,h<6||h>=18);$('#tP').textContent=fmt(h,m);
+    $('#placeName').textContent=v===58?'مسقط 🇴🇲 (تقريبًا)':v===0?'غرينتش':(AR(Math.abs(v))+'° '+(v>0?'شرق':'غرب'));
+    const mins=Math.abs(v)*4,hh=Math.floor(mins/60),mm=mins%60;
+    $('#calc').innerHTML=v===0?'أنتِ على خط غرينتش: لا فرق في الوقت ⭐':
+      `${AR(Math.abs(v))} × ٤ = <span class="big" style="color:${v>0?'var(--coral)':'var(--sky)'}">${AR(mins)}</span> دقيقة ${hh?`(${AR(hh)} ساعة${mm?` و${AR(mm)} دقيقة`:''})`:''}<br>${v>0?'الاتجاه شرق ⇐ نضيف (+) إلى وقت غرينتش':'الاتجاه غرب ⇐ نطرح (−) من وقت غرينتش'}`;
+    if(Math.abs(v-last)>=15){S.t(300+Math.abs(v)*3,.06,'sine',0,.06);last=v}}
+  r.addEventListener('input',upd);
+  $$('[data-lon]').forEach(b=>b.onclick=()=>{r.value=b.dataset.lon;S.pop();upd()});upd()})();
+
+/* ---------- zones ---------- */
+(function(){const cx=200,cy=165,R=140,b=base(cx,cy,R,false);
+  const y=p=>latY(cy,R,p);
+  const Z=[{k:'cn',y1:0,y2:y(66.5),c:'var(--cold)',n:'المنطقة الباردة الشمالية',t:'بين الدائرة القطبية الشمالية والقطب الشمالي. جليد وبرد شديد معظم العام 🐻‍❄️'},
+   {k:'tn',y1:y(66.5),y2:y(23.5),c:'var(--temp)',n:'المنطقة المعتدلة الشمالية',t:'بين مدار السرطان والدائرة القطبية الشمالية. حرارة معتدلة وفصول متنوعة 🍂'},
+   {k:'h',y1:y(23.5),y2:y(-23.5),c:'var(--hot)',n:'المنطقة الحارة (المدارية)',t:'بين مدار السرطان ومدار الجدي، وفي وسطها دائرة الاستواء. حرارة مرتفعة معظم العام ☀️'},
+   {k:'ts',y1:y(-23.5),y2:y(-66.5),c:'var(--temp)',n:'المنطقة المعتدلة الجنوبية',t:'بين مدار الجدي والدائرة القطبية الجنوبية 🌿'},
+   {k:'cs',y1:y(-66.5),y2:340,c:'var(--cold)',n:'المنطقة الباردة الجنوبية',t:'بين الدائرة القطبية الجنوبية والقطب الجنوبي. أبرد مناطق الأرض 🐧'}];
+  let s=`<svg viewBox="0 0 520 330" style="direction:ltr">${b.s}<g clip-path="url(#c${b.id})">`;
+  Z.forEach(z=>s+=`<rect class="zband" data-k="${z.k}" x="${cx-R}" y="${z.y1}" width="${2*R}" height="${z.y2-z.y1}" style="fill:${z.c}"/>`);
+  const k=R/150;s+=`<g style="fill:var(--landEdge)" opacity=".28" pointer-events="none" transform="translate(${cx-170*k} ${cy-170*k}) scale(${k})"><path d="M160 150C140 150 128 165 135 185C140 205 160 215 165 240C168 262 180 280 190 285C200 270 205 250 215 235C225 215 230 195 222 180C215 165 200 160 195 150C185 145 170 146 160 150Z"/><path d="M150 95C160 80 185 78 200 85C210 92 205 105 195 110C185 118 170 115 160 120C150 118 145 105 150 95Z"/><path d="M205 75C235 60 280 70 300 95C310 115 300 135 285 140C270 145 255 160 240 150C228 140 215 130 210 118C205 105 200 90 205 75Z"/><path d="M222 150C232 145 245 152 248 165C245 178 235 182 228 175C222 168 220 158 222 150Z"/></g></g>`;
+  const names=[[66.5,'الدائرة القطبية الشمالية'],[23.5,'مدار السرطان'],[0,'دائرة الاستواء'],[-23.5,'مدار الجدي'],[-66.5,'الدائرة القطبية الجنوبية']];
+  names.forEach(([p,n])=>{const yy=y(p),w=latW(R,p);s+=`<path d="M${cx-w} ${yy}L${cx+w} ${yy}M${cx+w} ${yy}L362 ${yy}" stroke="${p===0?'#FF5C8A':'#1B2559'}" stroke-width="${p===0?3:1.6}" stroke-dasharray="${p===0?'':'6 5'}" pointer-events="none" opacity=".75"/>
+   <text x="368" y="${yy+5}" font-size="13" font-weight="800" style="fill:var(--ink)">${n}</text>`});
+  const oy=y(20),ox=cx+R*Math.cos(20*RAD)*Math.sin(37*RAD);
+  s+=`<g id="omanStar" style="cursor:pointer" tabindex="0"><circle cx="${ox}" cy="${oy}" r="16" fill="#fff" opacity=".85"/><text x="${ox}" y="${oy+8}" text-anchor="middle" font-size="22">⭐</text>
+  <text x="${ox}" y="${oy-20}" text-anchor="middle" font-size="13" font-weight="800" fill="#1B2559">عُمان؟</text></g>`+rim(cx,cy,R)+'</svg>';
+  $('#zonesGlobe').innerHTML=s;
+  $$('#zonesGlobe .zband').forEach(r=>r.addEventListener('click',()=>{const z=Z.find(q=>q.k===r.dataset.k);S.pop();
+    $$('#zonesGlobe .zband').forEach(x=>x.classList.toggle('sel',x===r));
+    $('#zinfo').innerHTML=`<h3>${z.n}</h3><p style="margin:.3em 0 0">${z.t}</p>`}));
+  let got=false;const om=()=>{S.good();$('#zinfo').innerHTML=`<h3>🇴🇲 سلطنة عُمان</h3><p style="margin:.3em 0 0">تقع سلطنة عُمان في <b>المنطقة الحارة</b>، لذلك صيفها طويل وحار ☀️</p>`;
+    if(!got){got=true;addStar();confetti(50)}};
+  $('#omanStar').addEventListener('click',om);$('#omanStar').addEventListener('keydown',e=>{if(e.key==='Enter')om()})})();
+
+/* ---------- sea scene ---------- */
+$('#seaScene').innerHTML=`<defs><linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD6A5"/><stop offset="1" stop-color="#FFB3C7"/></linearGradient></defs>
+<rect width="520" height="260" rx="26" fill="url(#skyg)"/><circle cx="420" cy="70" r="34" fill="#FFC93C"/>
+<g opacity=".6" fill="#fff"><ellipse cx="110" cy="60" rx="40" ry="12"/><ellipse cx="140" cy="52" rx="26" ry="12"/><ellipse cx="300" cy="40" rx="30" ry="9"/></g>
+<g class="boat"><path d="M180 165L340 165L318 200L202 200Z" fill="#8B5A2B"/><path d="M200 172H320" stroke="#6B4220" stroke-width="3"/>
+<line x1="262" y1="165" x2="262" y2="60" stroke="#6B4220" stroke-width="5"/>
+<path d="M262 64Q320 100 266 156Z" fill="#fff" stroke="#E2E2E2"/><path d="M258 72Q215 110 256 150Z" fill="#FFF4E0" stroke="#E2E2E2"/>
+<path d="M262 60L292 50L262 44Z" fill="#E4002B"/><circle cx="300" cy="182" r="5" fill="#FFC93C"/></g>
+<g class="wave"><path d="M-80 205Q-60 192-40 205T0 205T40 205T80 205T120 205T160 205T200 205T240 205T280 205T320 205T360 205T400 205T440 205T480 205T520 205T560 205T600 205V260H-80Z" fill="#2C8BE0"/></g>
+<g class="wave" style="animation-duration:6s"><path d="M-80 225Q-60 212-40 225T0 225T40 225T80 225T120 225T160 225T200 225T240 225T280 225T320 225T360 225T400 225T440 225T480 225T520 225T560 225T600 225V260H-80Z" fill="#0FB5BA" opacity=".85"/></g>`;
+
+/* ---------- quiz engine ---------- */
+function makeQuiz(root,Q,label){let i=0,score=0;const res=[];
+  function render(){if(i>=Q.length)return done();const q=Q[i],order=shuffle(q.o.map((t,j)=>({t,j})));
+    root.innerHTML=`<div class="qtop"><div class="qdots">${Q.map((_,j)=>`<i class="${j<i?(res[j]?'g':'b'):j===i?'cur':''}"></i>`).join('')}</div><b>السؤال ${AR(i+1)} من ${AR(Q.length)}</b></div>
+    <div class="panel"><div class="qtext">${q.q}</div><div class="opts">${order.map((o,n)=>`<button class="opt" data-j="${o.j}"><span class="k">${['أ','ب','ج','د'][n]}</span>${o.t}</button>`).join('')}</div>
+    <div class="feedback say" id="${label}fb"><div class="mascot" style="width:64px">${mascot}</div><div class="bubble" style="flex:1"></div><button class="btn coral">${i<Q.length-1?'السؤال التالي ←':'النتيجة 🏆'}</button></div></div>`;
+    $$('.opt',root).forEach(b=>b.onclick=()=>answer(b,q))}
+  function answer(b,q){const ok=+b.dataset.j===q.a;$$('.opt',root).forEach(x=>{x.disabled=true;if(+x.dataset.j===q.a)x.classList.add('right')});
+    if(!ok)b.classList.add('wrong');res[i]=ok;if(ok){score++;S.good();addStar()}else S.bad();
+    const fb=$('.feedback',root);$('.bubble',fb).innerHTML=(ok?['ممتاز! 🌟','أحسنتِ! 👏','رائعة! 🎉'][i%3]:'لا بأس، نتعلّم معًا 💪')+'<br><span style="font-size:.9em">'+q.w+'</span>';
+    fb.classList.add('show');$('.btn',fb).onclick=()=>{i++;S.swoosh();render()};$('.btn',fb).focus()}
+  function done(){const p=score/Q.length,st=p===1?3:p>=.6?2:p>0?1:0;S.win();if(st>=2)confetti();
+    root.innerHTML=`<div class="panel result"><div class="mascot">${mascot}</div><div class="stars">${'⭐'.repeat(st)}${'☆'.repeat(3-st)}</div>
+    <p class="display" style="font-size:1.5em;font-weight:800;margin:0">${AR(score)} من ${AR(Q.length)} إجابات صحيحة</p>
+    <p style="margin:0;color:var(--muted)">${p===1?'بطلة حقيقية! 🏆':p>=.6?'عمل رائع! راجعي الأخطاء وستصبحين بطلة':'جرّبي مرة أخرى، أنتِ تستطيعين! 💪'}</p>
+    <div class="row"><button class="btn ghost" data-r>العبي مرة أخرى 🔄</button><button class="btn coral" data-n>اللعبة التالية ←</button></div></div>`;
+    $('[data-r]',root).onclick=()=>{i=0;score=0;res.length=0;S.pop();render()};$('[data-n]',root).onclick=()=>go(cur+1)}
+  render()}
+
+makeQuiz($('#quiz1'),[
+ {q:'عدد خطوط الطول في العالم:',o:['٩','٩٠','١٨٠','٣٦٠'],a:3,w:'٣٦٠ خطًا: ١٨٠ شرق غرينتش و١٨٠ غربه.'},
+ {q:'تفيد دوائر العرض في معرفة:',o:['المناخ','التضاريس','الزمن','الوقت'],a:0,w:'دوائر العرض تساعدنا على معرفة المناخ في العالم 🌡️'},
+ {q:'الخط الرئيسي الذي يقسم العالم إلى نصف الكرة الشرقي ونصف الكرة الغربي:',o:['مدار السرطان','غرينتش','مدار الجدي','الاستواء'],a:1,w:'خط غرينتش، ودرجته صفر.'},
+ {q:'الدائرة الرئيسية التي تقسم العالم إلى نصف الكرة الشمالي ونصف الكرة الجنوبي:',o:['مدار السرطان','غرينتش','مدار الجدي','الاستواء'],a:3,w:'دائرة الاستواء، ودرجتها صفر.'},
+ {q:'الفرق في التوقيت الزمني بين كل خط طول والذي يليه حوالي:',o:['دقيقة','دقيقتان','٣ دقائق','٤ دقائق'],a:3,w:'٤ دقائق بين كل خط طول والذي يليه ⏰'},
+ {q:'الشخصية العُمانية التي وصفت خطوط الطول ودوائر العرض في كتاب «الفوائد في أصول علم البحر والقواعد»:',o:['نور الدين السالمي','أحمد بن ماجد','كعب بن سور','المهلب بن أبي صفرة'],a:1,w:'الملّاح العُماني أحمد بن ماجد ⛵'},
+ {q:'المنطقة الحرارية التي تقع فيها سلطنة عُمان:',o:['الحارة','المعتدلة الشمالية','المعتدلة الجنوبية','الباردة'],a:0,w:'عُمان في المنطقة الحارة ☀️'},
+ {q:'عدد دوائر العرض:',o:['٩٠','١٨٠','٣٦٠','٤٥'],a:1,w:'١٨٠ دائرة: ٩٠ شمال الاستواء و٩٠ جنوبه.'},
+ {q:'تمتد خطوط الطول من:',o:['الشرق إلى الغرب','القطب الشمالي إلى القطب الجنوبي','مدار السرطان إلى مدار الجدي','الاستواء إلى القطب'],a:1,w:'خطوط الطول تمتد من القطب الشمالي إلى القطب الجنوبي ↕️'}
+],'q1');
+
+
+/* ---------- drag & tap engine ---------- */
+function dragGame(pool,zonesRoot,check,onPlace){let selected=null;
+  function tryDrop(card,zone){if(!zone)return;card.classList.remove('sel');selected=null;
+    if(check(card,zone)){S.good();addStar();onPlace(card,zone)}else{S.bad();card.classList.remove('bad');void card.offsetWidth;card.classList.add('bad')}}
+  pool.addEventListener('pointerdown',e=>{const card=e.target.closest('.dcard');if(!card)return;e.preventDefault();
+    const r=card.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,dx=sx-r.left,dy=sy-r.top;let ghost=null,moved=false,over=null;
+    const mv=ev=>{if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<6)return;
+      if(!moved){moved=true;ghost=card.cloneNode(true);ghost.classList.add('ghost');ghost.classList.remove('sel');ghost.style.width=r.width+'px';document.body.appendChild(ghost);card.classList.add('dragging');S.pop()}
+      ghost.style.left=(ev.clientX-dx)+'px';ghost.style.top=(ev.clientY-dy)+'px';
+      const el=document.elementFromPoint(ev.clientX,ev.clientY),z=el&&el.closest('.dzone');
+      if(z!==over){over&&over.classList.remove('over');over=z;over&&over.classList.add('over')}};
+    const up=ev=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);
+      over&&over.classList.remove('over');
+      if(!moved){ $$('.dcard',pool).forEach(c=>c!==card&&c.classList.remove('sel'));card.classList.toggle('sel');selected=card.classList.contains('sel')?card:null;S.pop();return}
+      ghost.remove();card.classList.remove('dragging');const el=document.elementFromPoint(ev.clientX,ev.clientY);tryDrop(card,el&&el.closest('.dzone'))};
+    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up)});
+  zonesRoot.addEventListener('click',e=>{const z=e.target.closest('.dzone');if(z&&selected)tryDrop(selected,z);else if(z&&!selected)toast('اختاري بطاقة أولًا 👆')})}
+
+/* game 2: labels */
+(function(){const cx=200,cy=165,R=135,b=base(cx,cy,R);
+  const items=[{k:'eq',n:'دائرة الاستواء',y:cy},{k:'can',n:'مدار السرطان',y:latY(cy,R,23.5)},{k:'cap',n:'مدار الجدي',y:latY(cy,R,-23.5)}];
+  let s=`<svg viewBox="0 0 520 360" style="direction:ltr">${b.s}`;let m='';for(let a=-75;a<=75;a+=15)if(a)m+=mer(cx,cy,R,a);
+  s+=`<path d="${m}" stroke="rgba(255,255,255,.4)" stroke-width="1.2" fill="none"/>`;
+  items.forEach(o=>{const w=Math.sqrt(R*R-(o.y-cy)**2);s+=`<path d="M${cx-w} ${o.y}L${cx+w} ${o.y}" stroke="#FFC93C" stroke-width="3.5"/><path d="M${cx+w} ${o.y}L358 ${o.y}" stroke="#FFC93C" stroke-width="2" stroke-dasharray="5 5"/>`});
+  s+=`<path d="M${cx} ${cy-R}L${cx} ${cy+R}" stroke="#FF5C8A" stroke-width="3.5"/><path d="M${cx} ${cy+R}L${cx} 310" stroke="#FF5C8A" stroke-width="2" stroke-dasharray="5 5"/>`+rim(cx,cy,R)+'</svg>';
+  const board=$('#g2board');let slots='';
+  items.forEach(o=>slots+=`<div class="slot dzone" data-zone="${o.k}" style="left:69.2%;top:${o.y/360*100}%">ضعي هنا</div>`);
+  slots+=`<div class="slot dzone" data-zone="gw" style="left:${(cx-75)/520*100}%;top:${328/360*100}%">ضعي هنا</div>`;
+  board.innerHTML=s+slots;
+  const names={eq:'دائرة الاستواء',can:'مدار السرطان',cap:'مدار الجدي',gw:'خط غرينتش'};let placed=0;
+  function deal(){placed=0;$$('.slot',board).forEach(z=>{z.classList.remove('filled');z.textContent='ضعي هنا'});$('#g2win').classList.remove('show');
+    $('#g2pool').innerHTML=shuffle(Object.keys(names)).map(k=>`<div class="dcard" data-k="${k}">${names[k]}</div>`).join('')}
+  dragGame($('#g2pool'),board,(c,z)=>c.dataset.k===z.dataset.zone&&!z.classList.contains('filled'),(c,z)=>{z.classList.add('filled');z.textContent=names[c.dataset.k];c.remove();
+    if(++placed===4){setTimeout(()=>{S.win();confetti();$('#g2win').classList.add('show')},400)}});
+  $('#g2again').onclick=()=>{S.pop();deal()};deal()})();
+
+/* game 3: sort */
+(function(){const C=[['lon','تمتد من القطب الشمالي إلى القطب الجنوبي'],['lon','أنصاف دوائر تلتقي عند القطبين'],['lon','الخط الرئيسي: غرينتش'],['lon','عددها ٣٦٠'],['lon','تحدد التوقيت الزمني'],
+   ['lat','تمتد من الشرق إلى الغرب'],['lat','دوائر كاملة تحيط بالأرض'],['lat','الدائرة الرئيسية: الاستواء'],['lat','عددها ١٨٠'],['lat','تفيد في معرفة المناخ']];
+  const sec=$$('.slide')[12];let left=0;
+  function deal(){left=C.length;$$('.basket .in',sec).forEach(x=>x.innerHTML='');$('#g3win').classList.remove('show');
+    $('#g3pool').innerHTML=shuffle(C).map(c=>`<div class="dcard" data-k="${c[0]}">${c[1]}</div>`).join('')}
+  dragGame($('#g3pool'),$('.baskets',sec),(c,z)=>c.dataset.k===z.dataset.zone,(c,z)=>{const s=document.createElement('span');s.textContent='✓ '+c.textContent;$('.in',z).appendChild(s);c.remove();
+    if(--left===0){setTimeout(()=>{S.win();confetti();$('#g3win').classList.add('show')},400)}});
+  $('#g3again').onclick=()=>{S.pop();deal()};deal()})();
+
+/* ---------- navigation ---------- */
+const slides=$$('.slide');let cur=0;
+const dots=$('#dots');slides.forEach((s,i)=>{const d=document.createElement('button');d.setAttribute('aria-label',s.dataset.title);d.title=s.dataset.title;if(s.hasAttribute('data-game'))d.classList.add('game');d.onclick=()=>go(i);dots.appendChild(d)});
+function go(i){if(i<0||i>=slides.length)return;const back=i<cur;slides[cur].classList.remove('active','back');cur=i;
+  const s=slides[cur];s.classList.add('active');s.classList.toggle('back',back);s.scrollTop=0;
+  $$('button',dots).forEach((d,j)=>d.classList.toggle('on',j===cur));
+  $('#prog').style.width=(cur/(slides.length-1)*100)+'%';$('#counter').textContent=`${AR(cur+1)} / ${AR(slides.length)}`;
+  $('#prev').disabled=cur===0;$('#next').disabled=cur===slides.length-1;S.swoosh();
+  if(cur===slides.length-1){setTimeout(()=>{S.win();confetti(120)},300)}}
+$('#next').onclick=()=>go(cur+1);$('#prev').onclick=()=>go(cur-1);
+$$('[data-next]').forEach(b=>b.onclick=()=>go(cur+1));
+$('#celebrate').onclick=()=>{S.win();confetti(140)};
+$('#restart').onclick=()=>location.reload();
+document.addEventListener('keydown',e=>{if(e.target.matches('input'))return;
+  if(e.key==='ArrowLeft'||e.key==='PageDown'){e.preventDefault();go(cur+1)}
+  if(e.key==='ArrowRight'||e.key==='PageUp'){e.preventDefault();go(cur-1)}});
+slides[0].classList.add('active');go(0);
+})();
+</script>
+</body>
+</html>
